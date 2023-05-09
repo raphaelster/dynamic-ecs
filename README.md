@@ -5,7 +5,7 @@ Naturally, the title is an acronym, meaning:
 
   W
   
-flExible
+(fl)Exible
 
   Dynamic
   
