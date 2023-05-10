@@ -30,12 +30,13 @@ example.cpp has a basic example, but the general method is:
 3. Call MyWorld.makeEntity(...) for any Entities you want to create
   a. Entities can be constructed out of any 
 
-# Terminology & Misc:
+# Terminology:
 A Template is used to instantiate a component Instance; an instantiated Instance is called a module.  
 A PartialComponent is a Component that isn't coupled to a specific System; this allows users to transfer Entities between different Worlds
 which have different implementations of the same System (or System mocking). For example, world A might be a designer, and world B a simulator.
 Systems in the designer world can be easy to mutate runtime, and systems in the simulator world can be constant and heavily optimized.  
 
+# Misc:
 *Drawbacks of other System registration methods:
   - Unique IDs could be generated compile-time with __COUNTER__, but this would corrupt saved Worlds when new Systems are added, or 
 when compilation order changes. This would also not support System mocking.
