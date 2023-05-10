@@ -11,7 +11,7 @@ Naturally, Wedge is an acronym, meaning:
     Entity-component system  
 </pre>
 
-#Features:
+# Features:
 
 Create entities with a list of arbitrary components at runtime  
 Serialization support (eventually)  
