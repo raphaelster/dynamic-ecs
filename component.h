@@ -10,7 +10,6 @@
 
 #include <iostream>
 
-///maybe put this in its own file
 struct EntityID {
     int ID;
     EntityID(int i)
@@ -43,11 +42,6 @@ struct Entity;
 
 struct EmptyStruct {};
 
-///module:
-/// the data for a single instance of a component
-/// not a very good name, but much more concise than ComponentData or w/e so I'm going with it
-
-
 ///this exists so I have a base I can dynamic_cast into templated ISystems
 /// also, a convenient place to put destroyEntityModules(eID), the function called to clean up after an entity being destroyed
 class SystemBase {
@@ -59,14 +53,11 @@ class SystemBase {
 };
 
 ///this interface exists so components don't need to know about the update input templating of a System
-
 template <class Template>
 class ISystem : public SystemBase {
     public:
     virtual ~ISystem() {}
 
-    //virtual Instance* instantiateTemplate(const Template& t) const =0;
-    //virtual void addModule(int ID, std::weak_ptr<Instance> module) =0;
     virtual void createModule(EntityID eID, const Template& t, SystemType st) =0;
 };
 template<class Template>
@@ -80,7 +71,6 @@ class System : public ISystem<Template> {
     const std::function<Entity*(EntityID)> getEntity;
 
     std::unordered_map<EntityID, std::vector<std::unique_ptr<Instance>>> modules;
-
 
     virtual std::unique_ptr<Instance> instantiateTemplate(const Template& t) =0;
 
@@ -146,10 +136,6 @@ class System : public ISystem<Template> {
     }
 };
 
-struct IComponent {
-    virtual ~IComponent() {};
-};
-
 struct IPartialComponent {
     virtual ~IPartialComponent() {};
 
@@ -191,7 +177,7 @@ class EmptyPC : public PartialComponent<EmptyStruct> {
         : PartialComponent<EmptyStruct>(EmptyStruct(), s) {}
 };
 
-
+///A system where there's no conversion needed between Templates and Instances
 template <class Instance, class ...UpdateInputs>
 class SimpleSystem : public System<Instance, Instance, UpdateInputs...> {
     public:
@@ -202,12 +188,12 @@ class SimpleSystem : public System<Instance, Instance, UpdateInputs...> {
     std::unique_ptr<Instance> instantiateTemplate(const Instance& i) {
         return std::make_unique<Instance>(i);
     }
-    //std::shared_ptr<PartialComponent<Template>> _recreatePartialComponent(const Instance& i, SystemType st) const
     std::shared_ptr<PartialComponent<Instance>> _recreatePartialComponent(const Instance& i, SystemType st) const {
         return std::make_shared<PartialComponent<Instance>>(i, st);
     }
 };
 
+///A system which just "tags" entities
 template <class ...UpdateInputs>
 class TagSystem : public System<EmptyStruct, EmptyStruct, UpdateInputs...> {
     public:
