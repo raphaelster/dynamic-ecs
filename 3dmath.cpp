@@ -51,6 +51,17 @@ const Vec3 Quaternion::rotate(const Vec3& in) const {
     return ((*this * Quaternion(in)) * this->conjugate()).toVec3();
 }
 
+
+double Quaternion::angle() const {
+    if (Vec3(x,y,z).mag() < 0.001) return 0.;
+    return 2. * std::atan2(std::sqrt(x*x + y*y + z*z), w);
+}
+const Vec3 Quaternion::axis() const {
+    if (Vec3(x,y,z).mag() < 0.001) return Vec3(0.);
+
+    return Vec3(x,y,z).normalize();
+}
+
 const Vec3 operator+(double lhs, const Vec3& rhs) {
     return rhs + lhs;
 }
@@ -75,10 +86,9 @@ Placement::Placement(const Vec3& p)
 Placement::Placement(const Quaternion& q)
     : pos(), dir(q) {}
 
-/*bullet3 compatibility
+/* bullet3
 Placement::Placement(const btTransform& tf)
-    : pos(tf.getOrigin()), dir(tf.getRotation()) {}
-*/
+    : pos(tf.getOrigin()), dir(tf.getRotation()) {}*/
 
 Placement::Placement()
     : pos(0), dir() {}
@@ -90,3 +100,37 @@ const Placement Placement::applyAsTransform(const Placement& other) const {
 
     return Placement(newPos, newRot);
 }
+
+Quaternion::Quaternion(Vec3 startDir, Vec3 endDir) {
+    startDir = startDir.normalize();
+    endDir   = endDir.normalize();
+
+    Vec3 axis = startDir.cross(endDir);
+    double angle = startDir.angleBetween(endDir);
+
+    if (axis.mag() < 0.001) {
+        Vec3 newAxis = Vec3(1,0,0) - Vec3(1,0,0).vectorProjOnto(startDir);
+        if (newAxis.mag() < 0.0001) newAxis = Vec3(0,1,0) - Vec3(0,1,0).vectorProjOnto(startDir);
+
+        axis = newAxis;
+    }
+
+    axis = axis.normalize();
+
+    x = Q_V.x;
+    y = Q_V.y;
+    z = Q_V.z;
+    w = cos(angle/2.0);
+}
+
+Quaternion Quaternion::slerp(const Quaternion& a, const Quaternion& b, double t) {
+    Quaternion inner = a.conjugate() * b;
+
+    double baseAngle = inner.angle();
+    Vec3 baseAxis = inner.axis();
+
+    if (baseAxis.isZero()) baseAxis = a.axis();
+
+    return a * (Quaternion(baseAxis, baseAngle * t));
+}
+

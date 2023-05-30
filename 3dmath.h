@@ -1,6 +1,6 @@
 #ifndef MATH3D_H_INCLUDED
 #define MATH3D_H_INCLUDED
-#include <glm/glm.hpp>
+//#include <glm/glm.hpp>
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -21,12 +21,18 @@ struct Vec3 {
         : x(0), y(0), z(0) {}
     explicit constexpr Vec3(double k)
         : x(k), y(k), z(k) {}
-    Vec3(glm::vec3 v)
+    
+
+	/*	GLM
+	Vec3(glm::vec3 v)
         : Vec3(v.x, v.y, v.z) {}
 
     static const Vec3 GlmXYZ(glm::vec4 v) {
         return Vec3(v.x, v.y, v.z);
     }
+    const btVector3 toBtVector3() const {
+        return btVector3(x, y, z);
+    }*/
 
     //dot product
     double dot(const Vec3& in) const {
@@ -86,6 +92,10 @@ struct Vec3 {
         return Vec3(x / in.x, y / in.y, z / in.x);
     }
 
+    bool isZero() const {
+        return mag() < 0.0001;
+    }
+
     const double scalarProjOnto(const Vec3& in) const {
         return this->dot(in.normalize());
     }
@@ -100,16 +110,11 @@ struct Vec3 {
         return (other - *this).mag();
     }
 
-	/*bullet3 compatibility
-    const btVector3 toBtVector3() const {
-        return btVector3(x, y, z);
-    }
+	/* Bullet3
 
     Vec3(btVector3 b)
         : x(b[0]), y(b[1]), z(b[2]) {}
-	*/
 
-	/*glm compatibility
     const glm::vec3 toGlmVec3() const {
         return glm::vec3(x, y, z);
     }
@@ -117,13 +122,16 @@ struct Vec3 {
     const glm::vec4 toGlmVec4Dir() const {
         return glm::vec4(x, y, z, 0.);
     }
-
+	
     const glm::vec4 toGlmVec4Pos() const {
         return glm::vec4(x, y, z, 1.);
-    }*/
+    }
+	*/
 
     double angleBetween(const Vec3& other) const {
-        return acos(this->dot(other) / this->mag() / other.mag());
+        double out = acos(this->dot(other) / (this->mag() * other.mag()));
+
+        return out == out ? out : 0.;
     }
 
     const Vec2 xy() const {
@@ -187,16 +195,7 @@ class Quaternion {
 
     const std::string toString() const;
 
-	/* bullet3 compatibility
-    const btQuaternion toBtQuaternion() const {
-        return btQuaternion(x, y, z, w);
-    }
-
-    Quaternion(btQuaternion q)
-        : x(q[0]), y(q[1]), z(q[2]), w(q[3]) {}
-	*/
-
-	/* glm compatibility
+	/* glm
     const glm::mat4 toMat4() const {
         return glm::toMat4(glm::quat(w, x, y, z));
     }*/
@@ -204,10 +203,25 @@ class Quaternion {
     ///convention: ZYX
     static const Quaternion eulerAngle(Vec3 angle);
 
+    /* bullet3
+
+    const btQuaternion toBtQuaternion() const {
+        return btQuaternion(x, y, z, w);
+    }
+	Quaternion(btQuaternion q)
+        : x(q[0]), y(q[1]), z(q[2]), w(q[3]) {}*/
 
     bool valid() {
         return x == x && y == y && z == z && w == w;
     }
+
+    double angle() const;
+    const Vec3 axis() const;
+
+    Quaternion(Vec3 startDir, Vec3 endDir);
+
+
+    static Quaternion slerp(const Quaternion& a, const Quaternion& b, double t);
 
     private:
     double x, y, z, w;
@@ -227,24 +241,25 @@ struct Placement {
     Placement(const Vec3& p, const Quaternion& d)
         : pos(p), dir(d) {}
 
-	/* bullet3 compatibility
-    const btTransform toTransform() const {
-        return btTransform(dir.toBtQuaternion(), pos.toBtVector3());
-    }
-
-    explicit Placement(const btTransform& tf);
-	*/
 
     explicit Placement(const Vec3& p);
 
     explicit Placement(const Quaternion& q);
 
-
     Placement();
 
-	/* glm compatibility
+	/* glm
     glm::mat4 toMat4() const {
         return glm::translate(glm::mat4(1), pos.toGlmVec3()) * dir.toMat4();
+    }
+	*/
+
+	/* bullet3
+
+    explicit Placement(const btTransform& tf);
+
+    const btTransform toTransform() const {
+        return btTransform(dir.toBtQuaternion(), pos.toBtVector3());
     }
 	*/
 

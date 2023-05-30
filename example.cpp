@@ -12,25 +12,24 @@ struct HealthValue {
         : maxHealth(maxHP), curHealth(maxHP) {}
 };
 
-typedef PartialComponent<HealthValue> HealthPC;
+typedef TypedPartialComponent<HealthValue, SystemType::Health> HealthPC;
 
 class ExampleGameWorld;
 
-class HealthSystem : public SimpleSystem<HealthValue> {
+class HealthSystem : public SimpleSystem<HealthValue, SystemType::Health> {
     public:
     HealthSystem(std::function<Entity*(EntityID)> idToEntity, ExampleGameWorld& gw)
-     : SimpleSystem<HealthValue>(idToEntity), world(gw) {}
+     : SimpleSystem(idToEntity), world(gw) {}
 
     void customUpdate();
 
     const HealthValue& get(EntityID eID) {
-        assert(modules.at(eID).size() == 1);
-        return *modules.at(eID).at(0);
+        assert(modules.count(eID));
+        return *modules.at(eID);
     }
 
     void applyDamage(EntityID eID, double damage) {
-        assert(modules.at(eID).size() == 1);
-        modules.at(eID).at(0)->curHealth -= damage;
+        modules.at(eID)->curHealth -= damage;
     }
 
     private:
@@ -50,8 +49,7 @@ class ExampleGameWorld : public WorldBase {
 #define ID2ENT getIDToEntityFunc()
 
 ExampleGameWorld::ExampleGameWorld()
-    : WorldBase({//{SystemType::X, xSystem}, ...
-				 {SystemType::Health, healthSystem}}),
+    : WorldBase({healthSystem}),
       healthSystem(ID2ENT, *this) /*, xSystem(ID2ENT, arg0, arg1), ...*/ {}
 
 void ExampleGameWorld::customUpdate(double deltaTime) {
@@ -64,7 +62,7 @@ void ExampleGameWorld::customUpdate(double deltaTime) {
 
 void HealthSystem::customUpdate() {
 	auto updateFunc = [&] (EntityID eID, Entity& e, HealthValue& v) {
-    if (v.curHealth <= 0.0 + 0.00001) world.deleteEntityNextFrame(eID);
+    	if (v.curHealth <= 0.0 + 0.00001) world.deleteEntityNextFrame(eID);
 	};
 
 	applyFunctionToModules(updateFunc);
@@ -87,7 +85,7 @@ int main() {
 
 	std::vector<std::shared_ptr<IPartialComponent>> makeComponentGroup();
 
-	EntityID e0 = world.makeEntity(Placement(Vec3(1,0,0)), makeComponentGroup(), new HealthPC(HealthValue(15.), SystemType::Health));
+	EntityID e0 = world.makeEntity(Placement(Vec3(1,0,0)), makeComponentGroup(), new HealthPC(HealthValue(15.)));
 
 	world.update(1.0);
 

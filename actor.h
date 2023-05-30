@@ -7,7 +7,10 @@
 #include <unordered_set>
 
 #include "component.h"
+
 #include "3dmath.h"
+
+struct GameWorld;
 
 struct ActorInfo {
     double walkSpeed;
@@ -15,6 +18,15 @@ struct ActorInfo {
 
     ActorInfo(double walk, double jump)
         : walkSpeed(walk), jumpHeight(jump) {}
+};
+
+struct SavedEntity {
+    EntityID ID;
+    std::vector<std::shared_ptr<IPartialComponent>> components;
+    Placement pos;
+
+    SavedEntity(EntityID eid, std::vector<std::shared_ptr<IPartialComponent>>&& componentList, Placement p)
+        : ID(eid), components(componentList), pos(p) {}
 };
 
 class Entity {
@@ -58,12 +70,20 @@ class Entity {
         return pos.dir * prevPos.dir.conjugate();
     }
 
-	//called in the WorldBase dtor; systems are deleted before entities
+    const std::unordered_set<SystemBase*>& getRelatedSystems() { return relatedSystems; }
+
+	//called in the WorldBase dtor; systems are deleted before entities, so this avoids a crash when worlds are destroyed
 	void clearRelatedSystems() {
 		relatedSystems.clear();
-	}	
+	}
 
-    const std::unordered_set<SystemBase*>& getRelatedSystems() { return relatedSystems; }
+	//needed so connectSystem can keep track of the lifetime of a limb tree parent
+	void addRelatedSystem(SystemBase* b) {
+        relatedSystems.insert(b);
+	}
+
+	SavedEntity save();
+
 };
 
 #endif // ACTOR_H
